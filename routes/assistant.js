@@ -21,31 +21,45 @@ app.handle("GET_TODAY", (conv) => {
   );
 });
 
-app.handle("CREATE_USER", async conv => {
-  let token = conv.headers.authorization;
-  let message = "";
-  if (token) {
-    try{
+async function getUser(token){
+  try{
+    if (token) {
       var decoded = jwt_decode(token)
       let thisUser = await User.findOne({'googleId': decoded.sub})
+      return thisUser
+    } else
+      return null
+      
+  } catch(err){
+    console.log(err)
+  }
+  
+
+}
+
+app.handle("CHECK_USER", async conv => {
+  let message = "";
+    try{
+      let thisUser = await getUser(conv.headers.authorization)
       if(thisUser){
+        console.log(conv.user)
+        conv.user.params.test = "test"
         conv.add(`Authenticated user: ${thisUser.name}.  Welcome back`)
         conv.add(
           new Image({
-            url: decoded.picture,
+            url: conv.user.params.tokenPayload.picture,
             alt: "Profile Picture",
           })
         );
       }else{
-        conv.add(`It looks like you dont have an account with us, check out reminders are us dot com to create one`)
+        conv.close('It looks like you dont have an account with us, visit us at blah blah dot com')
       }
       
     }catch(err){
       console.log(err);
     }
 
-  }
-  return 
+  
 });
 
 router.post('/hook', app)
